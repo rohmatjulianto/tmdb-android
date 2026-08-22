@@ -1,4 +1,4 @@
-package com.rohmat.tmdb_android.ui.theme
+package com.rohmat.tmdb_android.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
