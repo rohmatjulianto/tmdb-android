@@ -9,9 +9,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-private const val version_api = "3"
-private const val BASE_URL = "https://api.themoviedb.org/$version_api"
-
 val networkModule = module {
     single {
         HttpLoggingInterceptor().apply {
@@ -23,7 +20,7 @@ val networkModule = module {
             .addInterceptor { chain ->
                 val original = chain.request()
                 val request = original.newBuilder()
-                    .addHeader("Authorization", "Bearer ${BuildConfig.TOKEN}")
+                    .addHeader("Authorization", "Bearer ${BuildConfig.TMBD_TOKEN}")
                     .build()
 
                 chain.proceed(request = request)
@@ -36,7 +33,7 @@ val networkModule = module {
 
     single {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BuildConfig.TMDB_BASE_URL)
             .client(get())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
