@@ -1,5 +1,7 @@
 package com.rohmat.tmdb_android.presentation.ui.screen.detail
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,21 +11,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.rohmat.tmdb_android.util.Constants
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +47,10 @@ fun DetailScreen(
     viewModel: DetailViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState()
+    var showShareSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(movieId) {
         viewModel.loadMovie(movieId)
@@ -55,6 +72,9 @@ fun DetailScreen(
                                 imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = "Toggle Favorite"
                             )
+                        }
+                        IconButton(onClick = { showShareSheet = true }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Share")
                         }
                     }
                 }
@@ -96,6 +116,39 @@ fun DetailScreen(
                                 Text(text = review.content)
                             }
                         }
+                    }
+                }
+
+                if (showShareSheet) {
+                    val shareText = "share ${movie.title}"
+                    ModalBottomSheet(
+                        onDismissRequest = { showShareSheet = false },
+                        sheetState = sheetState
+                    ) {
+                        Text(
+                            text = "Share",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                        ListItem(
+                            headlineContent = { Text("Share via other apps") },
+                            leadingContent = {
+                                Icon(Icons.Filled.Share, contentDescription = null)
+                            },
+                            modifier = Modifier.clickable {
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                ContextCompat.startActivity(
+                                    context,
+                                    Intent.createChooser(sendIntent, "Share via"),
+                                    null
+                                )
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) showShareSheet = false
+                                }
+                            }
+                        )
                     }
                 }
             }
